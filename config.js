@@ -1,0 +1,4 @@
+window.BET_TERMINAL_CONFIG = {
+  supabaseUrl: "https://lunixjuuojqqvtgckqiq.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1bml4anV1b2pxcXZ0Z2NrcWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MDI5NzksImV4cCI6MjA5Njk3ODk3OX0.OrxZOZzTo_5rGxQClx2D_3Siq-R6Fx6dmJN6hZvP4xE"
+};

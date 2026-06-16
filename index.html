@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sports Bet Tracker</title>
+
+<style>
+:root{--bg:#05070a;--line:#263544;--text:#d8f3ff;--muted:#7f99a8;--green:#00ff88;--red:#ff3b57;--yellow:#ffd166;--cyan:#00d9ff;--blue:#2f80ed}
+*{box-sizing:border-box}
+body{margin:0;font-family:Consolas,"Courier New",monospace;background:linear-gradient(rgba(0,217,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,255,.035) 1px,transparent 1px),var(--bg);background-size:24px 24px;color:var(--text)}
+header{border-bottom:1px solid var(--line);background:#070b10;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center;position:sticky;top:0;z-index:10}
+.brand{color:var(--cyan);font-size:20px;font-weight:bold;letter-spacing:1px}
+.ticker{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:#070b10}
+nav button{background:#0d151e;color:var(--muted);border:1px solid var(--line);padding:10px 14px;cursor:pointer;font-family:inherit;font-weight:bold}
+nav button.active{color:var(--bg);background:var(--cyan);border-color:var(--cyan)}
+main{padding:18px;max-width:1400px;margin:0 auto}
+.tab{display:none}.tab.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.card,.panel,.chart-box{background:rgba(11,17,24,.96);border:1px solid var(--line);padding:14px}
+.card{min-height:100px}.panel{margin-bottom:16px}.panel.two{grid-column:span 2}
+.label{color:var(--muted);font-size:12px;text-transform:uppercase;margin-bottom:10px}
+.value{font-size:28px;font-weight:bold}
+.green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}.cyan{color:var(--cyan)}
+.panel-title{color:var(--cyan);font-weight:bold;margin-bottom:12px;text-transform:uppercase}
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px}
+.chart-box{height:320px}.chart-box.full{grid-column:1/-1}
+.chart-box canvas{width:100%!important;height:260px!important}
+form{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+input,select,button{font-family:inherit}
+input,select{width:100%;background:#05080c;border:1px solid var(--line);color:var(--text);padding:10px}
+input:focus,select:focus{outline:1px solid var(--cyan)}
+.primary{background:var(--cyan);color:#001014;border:1px solid var(--cyan);padding:10px;cursor:pointer;font-weight:bold}
+.danger{background:transparent;color:var(--red);border:1px solid var(--red);padding:7px 9px;cursor:pointer}
+.small-button{background:transparent;color:var(--cyan);border:1px solid var(--cyan);padding:7px 9px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;vertical-align:middle}
+th{color:var(--cyan);background:#071018}
+tr:hover td{background:rgba(0,217,255,.05)}
+.filters{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.calendar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.calendar-controls{display:flex;gap:8px;align-items:center}
+.calendar-title{color:var(--cyan);font-size:20px;font-weight:bold}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.day-name{color:var(--muted);text-align:center;padding:8px;border-bottom:1px solid var(--line)}
+.day{min-height:120px;border:1px solid var(--line);background:#080d13;padding:8px}
+.day.empty{opacity:.25}.day-number{color:var(--text);font-weight:bold;margin-bottom:8px}.day-stat{font-size:12px;line-height:1.5}
+.month-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.summary-box{border:1px solid var(--line);background:#080d13;padding:10px}
+.two{grid-column:span 2}
+.status{padding:3px 7px;border:1px solid var(--line);display:inline-block;font-size:12px}
+.status.win{color:var(--green);border-color:var(--green)}.status.loss{color:var(--red);border-color:var(--red)}.status.push{color:var(--yellow);border-color:var(--yellow)}.status.pending{color:var(--muted)}.status.cashout{color:var(--cyan);border-color:var(--cyan)}
+.quick-results{display:flex;gap:4px;margin-top:6px}
+.quick-results button{width:26px;height:24px;padding:0;font-size:12px;font-weight:bold;cursor:pointer;background:#05080c;border:1px solid var(--line)}
+.quick-win{color:var(--green);border-color:var(--green)!important}.quick-loss{color:var(--red);border-color:var(--red)!important}.quick-push{color:var(--yellow);border-color:var(--yellow)!important}.quick-cashout{color:var(--cyan);border-color:var(--cyan)!important}.quick-pending{color:var(--muted)}
+.auth-panel{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:#080d13}
+.auth-panel form{display:flex;grid-template-columns:none;gap:8px;align-items:center}
+.auth-panel input{min-width:220px}
+.auth-status{color:var(--muted);font-size:12px}
+.hidden{display:none!important}
+.note{color:var(--muted);font-size:12px;margin-top:8px}
+@media(max-width:1000px){.grid,.month-summary{grid-template-columns:repeat(2,1fr)}form,.filters,.chart-grid{grid-template-columns:1fr}.chart-box.full,.panel.two{grid-column:auto}}
+@media(max-width:650px){header{display:block}.ticker{margin-top:8px}nav{overflow-x:auto}.auth-panel,.auth-panel form{display:block}.auth-panel input,.auth-panel button{margin-top:8px}.grid,.month-summary,form,.filters{grid-template-columns:1fr}table{font-size:12px}.calendar{grid-template-columns:1fr}.day-name{display:none}}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="brand">BET TERMINAL // LOCAL</div>
+  <div class="ticker" id="ticker">INITIALIZING MARKET LEDGER...</div>
+</header>
+
+<nav>
+  <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-button" data-tab="bets">Bet Ledger</button>
+  <button class="tab-button" data-tab="calendar">Calendar</button>
+  <button class="tab-button" data-tab="settings">Settings</button>
+</nav>
+
+<section class="auth-panel">
+  <div>
+    <div class="panel-title" style="margin-bottom:4px;">Cloud Account</div>
+    <div class="auth-status" id="cloudStatus">Cloud sync not configured yet.</div>
+  </div>
+
+  <form id="authForm">
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="email" />
+    <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password" />
+    <button class="primary" type="submit">SIGN IN</button>
+    <button class="small-button" id="createAccountButton" type="button">CREATE ACCOUNT</button>
+  </form>
+
+  <button class="small-button hidden" id="signOutButton" type="button">SIGN OUT</button>
+</section>
+
+<main>
+<section id="dashboard" class="tab active">
+  <div class="grid">
+    <div class="card"><div class="label">Current Bankroll</div><div class="value" id="currentBankroll">$0.00</div></div>
+    <div class="card"><div class="label">Total Profit / Loss</div><div class="value" id="totalProfit">$0.00</div></div>
+    <div class="card"><div class="label">ROI</div><div class="value" id="roi">0.00%</div></div>
+    <div class="card"><div class="label">Record W-L-P-C</div><div class="value" id="record">0-0-0-0</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="label">Units Won / Lost</div><div class="value" id="units">0.00u</div></div>
+    <div class="card"><div class="label">Total Risked</div><div class="value" id="risked">$0.00</div></div>
+    <div class="card"><div class="label">Win Rate</div><div class="value" id="winRate">0.00%</div></div>
+    <div class="card"><div class="label">Pending Bets</div><div class="value yellow" id="pendingCount">0</div></div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-box"><div class="panel-title">Profit / Loss Trend</div><canvas id="profitChart"></canvas></div>
+    <div class="chart-box"><div class="panel-title">Win Rate</div><canvas id="winRateChart"></canvas></div>
+    <div class="chart-box full"><div class="panel-title">Bankroll Over Time</div><canvas id="bankrollChart"></canvas></div>
+    <div class="chart-box full"><div class="panel-title">Total Risked vs Won</div><canvas id="riskWonChart"></canvas></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel two"><div class="panel-title">Sport / League Breakdown</div><div id="sportBreakdown"></div></div>
+    <div class="panel two"><div class="panel-title">Bet Type Breakdown</div><div id="betTypeBreakdown"></div></div>
+  </div>
+
+  <div class="panel"><div class="panel-title">Recent Action</div><div id="recentTable"></div></div>
+</section>
+
+<section id="bets" class="tab">
+  <div class="panel">
+    <div class="panel-title">Enter Bet</div>
+    <form id="betForm">
+      <input type="date" id="date" required />
+      <input type="text" id="sport" placeholder="Sport / League" list="sportSuggestions" required />
+      <datalist id="sportSuggestions"></datalist>
+      <input type="text" id="event" placeholder="Event / Game" required />
+      <input type="text" id="market" placeholder="Bet / Market" required />
+
+      <select id="betType">
+        <option value="Moneyline">Moneyline</option>
+        <option value="Spread">Spread</option>
+        <option value="Total">Total</option>
+        <option value="Player Prop">Player Prop</option>
+        <option value="Team Prop">Team Prop</option>
+        <option value="Parlay">Parlay</option>
+        <option value="Future">Future</option>
+        <option value="Live Bet">Live Bet</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <input type="number" id="odds" placeholder="Odds" step="0.01" required />
+
+      <select id="oddsFormat">
+        <option value="decimal">Decimal Odds</option>
+        <option value="american">American Odds</option>
+      </select>
+
+      <input type="number" id="stake" placeholder="Stake $" step="0.01" required />
+
+      <select id="result">
+        <option value="pending">Pending</option>
+        <option value="win">Win</option>
+        <option value="loss">Loss</option>
+        <option value="push">Push</option>
+        <option value="cashout">Cashout</option>
+      </select>
+
+      <input type="text" id="book" placeholder="Sportsbook" list="bookSuggestions" />
+      <datalist id="bookSuggestions"></datalist>
+      <input type="text" id="notes" placeholder="Notes" class="two" />
+
+      <button class="primary" type="submit">ADD BET</button>
+      <button class="small-button" type="button" id="clearForm">CLEAR</button>
+    </form>
+    <div class="note">Decimal odds are the default. Example: 1.91 or 2.45. American odds example: -110 or +145.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Filters</div>
+    <div class="filters">
+      <input type="text" id="search" placeholder="Search event, market, book" />
+      <select id="filterResult">
+        <option value="all">All Results</option>
+        <option value="pending">Pending</option>
+        <option value="win">Wins</option>
+        <option value="loss">Losses</option>
+        <option value="push">Pushes</option>
+        <option value="cashout">Cashouts</option>
+      </select>
+      <input type="date" id="filterFrom" />
+      <input type="date" id="filterTo" />
+      <button class="small-button" id="resetFilters">RESET FILTERS</button>
+    </div>
+    <div id="betsTable"></div>
+  </div>
+</section>
+
+<section id="calendar" class="tab">
+  <div class="panel">
+    <div class="calendar-top">
+      <div class="calendar-title" id="calendarTitle"></div>
+      <div class="calendar-controls">
+        <button class="small-button" id="prevMonth">PREV</button>
+        <button class="small-button" id="todayMonth">TODAY</button>
+        <button class="small-button" id="nextMonth">NEXT</button>
+      </div>
+    </div>
+
+    <div class="month-summary">
+      <div class="summary-box"><div class="label">Month Profit / Loss</div><div class="value" id="monthProfit">$0.00</div></div>
+      <div class="summary-box"><div class="label">Month Units</div><div class="value" id="monthUnits">0.00u</div></div>
+      <div class="summary-box"><div class="label">Month Record W-L-P-C</div><div class="value" id="monthRecord">0-0-0-0</div></div>
+      <div class="summary-box"><div class="label">Month ROI</div><div class="value" id="monthRoi">0.00%</div></div>
+    </div>
+
+    <div class="calendar" id="calendarGrid"></div>
+  </div>
+</section>
+
+<section id="settings" class="tab">
+  <div class="panel">
+    <div class="panel-title">Settings</div>
+    <form id="settingsForm">
+      <input type="number" id="unitSize" placeholder="Unit Size $" step="0.01" min="0.01" />
+      <input type="number" id="startingBankroll" placeholder="Starting Bankroll $" step="0.01" min="0" />
+      <button class="primary" type="submit">SAVE SETTINGS</button>
+    </form>
+    <div class="note">Current bankroll equals starting bankroll plus deposits minus withdrawals plus betting profit/loss.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Deposits / Withdrawals</div>
+    <form id="bankrollForm">
+      <input type="date" id="bankrollDate" required />
+      <select id="bankrollType">
+        <option value="deposit">Deposit</option>
+        <option value="withdrawal">Withdrawal</option>
+      </select>
+      <input type="number" id="bankrollAmount" placeholder="Amount $" step="0.01" min="0.01" required />
+      <input type="text" id="bankrollNote" placeholder="Note" class="two" />
+      <button class="primary" type="submit">ADD TRANSACTION</button>
+    </form>
+    <div class="note">Deposits increase bankroll. Withdrawals reduce bankroll.</div>
+    <div id="bankrollTransactionsTable" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Data Controls</div>
+    <button class="small-button" id="exportData">EXPORT DATA</button>
+    <button class="small-button" id="importData">IMPORT TRACKER DATA</button>
+    <button class="danger" id="wipeData">WIPE ALL DATA</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none;" />
+  </div>
+</section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const STORAGE_KEY="sportsBetTrackerBets";
+const SETTINGS_KEY="sportsBetTrackerSettings";
+const BANKROLL_KEY="sportsBetTrackerBankrollTransactions";
+
+let bets=JSON.parse(localStorage.getItem(STORAGE_KEY))||[];
+let settings={unitSize:100,startingBankroll:0,...(JSON.parse(localStorage.getItem(SETTINGS_KEY))||{})};
+let bankrollTransactions=JSON.parse(localStorage.getItem(BANKROLL_KEY))||[];
+let supabaseClient=null;
+let currentUser=null;
+let syncTimer=null;
+let isLoadingCloud=false;
+let editingId=null;
+let calendarDate=new Date();
+let profitChart,winRateChart,riskWonChart,bankrollChart;
+
+const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"});
+
+function makeId(){return "id-"+Date.now()+"-"+Math.random().toString(16).slice(2)}
+function saveBets(){localStorage.setItem(STORAGE_KEY,JSON.stringify(bets));scheduleCloudSave()}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));scheduleCloudSave()}
+function saveBankrollTransactions(){localStorage.setItem(BANKROLL_KEY,JSON.stringify(bankrollTransactions));scheduleCloudSave()}
+function getTerminalData(){return{bets,settings,bankrollTransactions,version:1,updatedAt:new Date().toISOString()}}
+function applyTerminalData(data){
+  if(!data)return;
+  bets=Array.isArray(data.bets)?data.bets:[];
+  settings={unitSize:100,startingBankroll:0,...(data.settings||{})};
+  bankrollTransactions=Array.isArray(data.bankrollTransactions)?data.bankrollTransactions:[];
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(bets));
+  localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+  localStorage.setItem(BANKROLL_KEY,JSON.stringify(bankrollTransactions));
+  document.getElementById("unitSize").value=settings.unitSize;
+  document.getElementById("startingBankroll").value=settings.startingBankroll||0;
+}
+function formatMoney(value){return money.format(value||0)}
+function formatPercent(value){return `${(value||0).toFixed(2)}%`}
+function colorClass(value){if(value>0)return"green";if(value<0)return"red";return"yellow"}
+function setValue(id,value,numericValue){const el=document.getElementById(id);el.textContent=value;el.className="value "+colorClass(numericValue)}
+function escapeHtml(value){return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+
+function cloudConfigReady(){
+  const config=window.BET_TERMINAL_CONFIG||{};
+  return Boolean(config.supabaseUrl&&config.supabaseAnonKey&&window.supabase);
+}
+
+function setCloudStatus(message,isOnline=false){
+  const status=document.getElementById("cloudStatus");
+  if(!status)return;
+  status.textContent=message;
+  status.className="auth-status "+(isOnline?"green":"");
+}
+
+async function initCloud(){
+  if(!cloudConfigReady()){
+    setCloudStatus("Cloud sync not configured yet. Local mode is active.");
+    renderAll();
+    return;
+  }
+
+  const config=window.BET_TERMINAL_CONFIG;
+  supabaseClient=window.supabase.createClient(config.supabaseUrl,config.supabaseAnonKey);
+  const {data}=await supabaseClient.auth.getSession();
+  currentUser=data.session?.user||null;
+  updateAuthUi();
+
+  supabaseClient.auth.onAuthStateChange(async (_event,session)=>{
+    currentUser=session?.user||null;
+    updateAuthUi();
+    if(currentUser)await loadCloudData();
+    renderAll();
+  });
+
+  if(currentUser)await loadCloudData();
+  renderAll();
+}
+
+function updateAuthUi(){
+  const authForm=document.getElementById("authForm");
+  const signOutButton=document.getElementById("signOutButton");
+  if(currentUser){
+    authForm.classList.add("hidden");
+    signOutButton.classList.remove("hidden");
+    setCloudStatus(`Signed in as ${currentUser.email}. Cloud sync active.`,true);
+  }else if(cloudConfigReady()){
+    authForm.classList.remove("hidden");
+    signOutButton.classList.add("hidden");
+    setCloudStatus("Sign in to sync this terminal across devices.");
+  }
+}
+
+async function signInUser(email,password){
+  if(!supabaseClient)return;
+  const signIn=await supabaseClient.auth.signInWithPassword({email,password});
+  if(!signIn.error)return true;
+
+  if(signIn.error.message.toLowerCase().includes("confirm")){
+    alert("That account still needs email confirmation. Check your inbox, confirm the email, then sign in.");
+  }else{
+    alert(signIn.error.message);
+  }
+
+  return false;
+}
+
+async function createAccount(email,password){
+  if(!supabaseClient)return;
+  const signUp=await supabaseClient.auth.signUp({email,password});
+  if(signUp.error){
+    alert(signUp.error.message);
+    return;
+  }
+
+  alert("Account created. If Supabase asks for email confirmation, check your inbox before signing in.");
+}
+
+async function loadCloudData(){
+  if(!supabaseClient||!currentUser)return;
+  isLoadingCloud=true;
+  const {data,error}=await supabaseClient
+    .from("terminal_data")
+    .select("data")
+    .eq("user_id",currentUser.id)
+    .maybeSingle();
+
+  if(error){
+    setCloudStatus("Cloud load failed. Local data is still available.");
+    isLoadingCloud=false;
+    return;
+  }
+
+  if(data?.data){
+    applyTerminalData(data.data);
+  }else{
+    await saveCloudData();
+  }
+
+  isLoadingCloud=false;
+}
+
+function scheduleCloudSave(){
+  if(isLoadingCloud||!supabaseClient||!currentUser)return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(saveCloudData,600);
+}
+
+async function saveCloudData(){
+  if(!supabaseClient||!currentUser)return;
+  const {error}=await supabaseClient
+    .from("terminal_data")
+    .upsert({
+      user_id:currentUser.id,
+      data:getTerminalData(),
+      updated_at:new Date().toISOString()
+    });
+
+  if(error){
+    setCloudStatus("Cloud save failed. Changes remain saved locally.");
+  }else{
+    setCloudStatus(`Signed in as ${currentUser.email}. Synced ${new Date().toLocaleTimeString()}.`,true);
+  }
+}
+
+function getProfit(bet){
+  const stake=Number(bet.stake);
+  const odds=Number(bet.odds);
+  const oddsFormat=bet.oddsFormat||"decimal";
+  if(bet.result==="pending"||bet.result==="push")return 0;
+  if(bet.result==="cashout")return Number(bet.cashoutAmount||0)-stake;
+  if(bet.result==="loss")return -stake;
+  if(oddsFormat==="decimal")return stake*(odds-1);
+  if(odds>0)return stake*(odds/100);
+  return stake*(100/Math.abs(odds));
+}
+
+function getSettledBets(list=bets){return list.filter(bet=>bet.result!=="pending")}
+function getStats(list=bets){
+  const settled=getSettledBets(list);
+  const wins=list.filter(b=>b.result==="win").length;
+  const losses=list.filter(b=>b.result==="loss").length;
+  const pushes=list.filter(b=>b.result==="push").length;
+  const cashouts=list.filter(b=>b.result==="cashout").length;
+  const pending=list.filter(b=>b.result==="pending").length;
+  const profit=settled.reduce((sum,b)=>sum+getProfit(b),0);
+  const risked=settled.reduce((sum,b)=>sum+Number(b.stake),0);
+  const roi=risked>0?(profit/risked)*100:0;
+  const winRate=wins+losses>0?(wins/(wins+losses))*100:0;
+  const avgBet=list.length>0?list.reduce((sum,b)=>sum+Number(b.stake),0)/list.length:0;
+  const units=settings.unitSize>0?profit/settings.unitSize:0;
+  return{wins,losses,pushes,cashouts,pending,profit,risked,roi,winRate,avgBet,units};
+}
+
+function getBankrollStats(){
+  const bettingProfit=getStats().profit;
+  const deposits=bankrollTransactions.filter(i=>i.type==="deposit").reduce((s,i)=>s+Number(i.amount),0);
+  const withdrawals=bankrollTransactions.filter(i=>i.type==="withdrawal").reduce((s,i)=>s+Number(i.amount),0);
+  const currentBankroll=Number(settings.startingBankroll||0)+deposits-withdrawals+bettingProfit;
+  return{deposits,withdrawals,bettingProfit,currentBankroll};
+}
+
+function chartLineOptions(chartText,chartGrid){
+  return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartText}}},scales:{x:{ticks:{color:chartText},grid:{color:chartGrid}},y:{ticks:{color:chartText,callback:value=>"$"+value},grid:{color:chartGrid}}}};
+}
+
+function getBankrollTimeline(){
+  const events=[{label:"Starting Bankroll",date:"0000-01-01",amount:Number(settings.startingBankroll||0)}];
+  getSettledBets([...bets]).forEach(b=>events.push({label:b.date,date:b.date,amount:getProfit(b)}));
+  bankrollTransactions.forEach(i=>events.push({label:i.date,date:i.date,amount:i.type==="deposit"?Number(i.amount):-Number(i.amount)}));
+  events.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let running=0;
+  const labels=[],data=[];
+  events.forEach(i=>{running+=Number(i.amount);labels.push(i.label);data.push(Number(running.toFixed(2)))});
+  return{labels,data};
+}
+
+function renderCharts(){
+  if(typeof Chart==="undefined")return;
+  const settled=getSettledBets([...bets]).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let runningProfit=0;
+  const profitLabels=[],profitData=[];
+  settled.forEach(b=>{runningProfit+=getProfit(b);profitLabels.push(b.date);profitData.push(Number(runningProfit.toFixed(2)))});
+  const stats=getStats();
+  const totalWon=bets.filter(b=>b.result==="win"||b.result==="cashout").reduce((sum,b)=>sum+Math.max(getProfit(b),0),0);
+  const chartText="#d8f3ff",chartGrid="rgba(216,243,255,.12)";
+  if(profitChart)profitChart.destroy();
+  if(winRateChart)winRateChart.destroy();
+  if(riskWonChart)riskWonChart.destroy();
+  if(bankrollChart)bankrollChart.destroy();
+
+  profitChart=new Chart(document.getElementById("profitChart"),{type:"line",data:{labels:profitLabels,datasets:[{label:"Running P/L",data:profitData,borderColor:"#00d9ff",backgroundColor:"rgba(0,217,255,.15)",tension:.25,fill:true,pointRadius:3}]},options:chartLineOptions(chartText,chartGrid)});
+
+  winRateChart=new Chart(document.getElementById("winRateChart"),{type:"doughnut",data:{labels:["Wins","Losses","Pushes","Cashouts"],datasets:[{data:[stats.wins,stats.losses,stats.pushes,stats.cashouts],backgroundColor:["#00ff88","#ff3b57","#ffd166","#00d9ff"],borderColor:"#05070a",borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartText}}}}});
+
+  const bankrollTimeline=getBankrollTimeline();
+  bankrollChart=new Chart(document.getElementById("bankrollChart"),{type:"line",data:{labels:bankrollTimeline.labels,datasets:[{label:"Bankroll",data:bankrollTimeline.data,borderColor:"#00ff88",backgroundColor:"rgba(0,255,136,.12)",tension:.25,fill:true,pointRadius:3}]},options:chartLineOptions(chartText,chartGrid)});
+
+  riskWonChart=new Chart(document.getElementById("riskWonChart"),{type:"bar",data:{labels:["Total Risked","Total Won","Net P/L"],datasets:[{label:"Dollars",data:[Number(stats.risked.toFixed(2)),Number(totalWon.toFixed(2)),Number(stats.profit.toFixed(2))],backgroundColor:["#2f80ed","#00ff88",stats.profit>=0?"#00d9ff":"#ff3b57"],borderWidth:1}]},options:chartLineOptions(chartText,chartGrid)});
+}
+
+function renderDashboard(){
+  const stats=getStats();
+  const bankrollStats=getBankrollStats();
+  setValue("currentBankroll",formatMoney(bankrollStats.currentBankroll),bankrollStats.currentBankroll);
+  setValue("totalProfit",formatMoney(stats.profit),stats.profit);
+  setValue("roi",formatPercent(stats.roi),stats.roi);
+  document.getElementById("record").textContent=`${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}`;
+  setValue("units",`${stats.units.toFixed(2)}u`,stats.units);
+  document.getElementById("risked").textContent=formatMoney(stats.risked);
+  document.getElementById("winRate").textContent=formatPercent(stats.winRate);
+  document.getElementById("pendingCount").textContent=stats.pending;
+  const recent=[...bets].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  document.getElementById("recentTable").innerHTML=buildTable(recent,false);
+  renderCharts();
+}
+
+function getBreakdownRows(field){
+  const groups={};
+  bets.forEach(b=>{
+    const key=b[field]||"Uncategorized";
+    if(!groups[key])groups[key]=[];
+    groups[key].push(b);
+  });
+  return Object.entries(groups).map(([name,groupBets])=>{
+    const stats=getStats(groupBets);
+    return{name,bets:groupBets.length,wins:stats.wins,losses:stats.losses,pushes:stats.pushes,cashouts:stats.cashouts,profit:stats.profit,roi:stats.roi,units:stats.units,winRate:stats.winRate};
+  }).sort((a,b)=>b.profit-a.profit);
+}
+
+function buildBreakdownTable(rows){
+  if(!rows.length)return `<div class="note">No data yet.</div>`;
+  return `<table><thead><tr><th>Name</th><th>Bets</th><th>Record</th><th>P/L</th><th>Units</th><th>ROI</th><th>Win Rate</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td>${r.bets}</td><td>${r.wins}-${r.losses}-${r.pushes}-${r.cashouts}</td><td class="${colorClass(r.profit)}">${formatMoney(r.profit)}</td><td class="${colorClass(r.units)}">${r.units.toFixed(2)}u</td><td class="${colorClass(r.roi)}">${formatPercent(r.roi)}</td><td>${formatPercent(r.winRate)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function renderBreakdowns(){
+  document.getElementById("sportBreakdown").innerHTML=buildBreakdownTable(getBreakdownRows("sport"));
+  document.getElementById("betTypeBreakdown").innerHTML=buildBreakdownTable(getBreakdownRows("betType"));
+}
+
+function renderMemorySuggestions(){
+  const sports=[...new Set(bets.map(b=>b.sport).filter(Boolean).sort())];
+  const books=[...new Set(bets.map(b=>b.book).filter(Boolean).sort())];
+  document.getElementById("sportSuggestions").innerHTML=sports.map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
+  document.getElementById("bookSuggestions").innerHTML=books.map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
+}
+
+function buildTable(list,showActions=true){
+  if(list.length===0)return `<div class="note">No bets found.</div>`;
+  const rows=list.map(b=>{
+    const profit=getProfit(b);
+    const units=settings.unitSize>0?profit/settings.unitSize:0;
+    const oddsText=(b.oddsFormat||"decimal")==="american"?`${Number(b.odds)>0?"+":""}${b.odds}`:b.odds;
+    const resultText=b.result==="cashout"&&b.cashoutAmount?`CASHOUT ${formatMoney(Number(b.cashoutAmount))}`:b.result.toUpperCase();
+    return `<tr>
+      <td>${b.date}</td>
+      <td>${escapeHtml(b.sport)}</td>
+      <td>${escapeHtml(b.event)}</td>
+      <td>${escapeHtml(b.market)}</td>
+      <td>${escapeHtml(b.betType||"Other")}</td>
+      <td>${oddsText}</td>
+      <td>${escapeHtml(b.oddsFormat||"decimal")}</td>
+      <td>${formatMoney(Number(b.stake))}</td>
+      <td><span class="status ${b.result}">${resultText}</span>${showActions?`<div class="quick-results"><button onclick="updateBetResult('${b.id}','win')" class="quick-win">W</button><button onclick="updateBetResult('${b.id}','loss')" class="quick-loss">L</button><button onclick="updateBetResult('${b.id}','push')" class="quick-push">P</button><button onclick="cashoutBet('${b.id}')" class="quick-cashout">$</button><button onclick="updateBetResult('${b.id}','pending')" class="quick-pending">?</button></div>`:""}</td>
+      <td class="${colorClass(profit)}">${formatMoney(profit)}</td>
+      <td class="${colorClass(units)}">${units.toFixed(2)}u</td>
+      <td>${escapeHtml(b.book||"")}</td>
+      ${showActions?`<td><button class="small-button" onclick="editBet('${b.id}')">EDIT</button> <button class="danger" onclick="deleteBet('${b.id}')">DELETE</button></td>`:""}
+    </tr>`;
+  }).join("");
+  return `<table><thead><tr><th>Date</th><th>Sport</th><th>Event</th><th>Market</th><th>Type</th><th>Odds</th><th>Format</th><th>Stake</th><th>Result</th><th>P/L</th><th>Units</th><th>Book</th>${showActions?"<th>Actions</th>":""}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderBetsTable(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const result=document.getElementById("filterResult").value;
+  const from=document.getElementById("filterFrom").value;
+  const to=document.getElementById("filterTo").value;
+  let filtered=[...bets];
+  if(search)filtered=filtered.filter(b=>b.event.toLowerCase().includes(search)||b.market.toLowerCase().includes(search)||(b.book||"").toLowerCase().includes(search)||b.sport.toLowerCase().includes(search)||(b.betType||"").toLowerCase().includes(search));
+  if(result!=="all")filtered=filtered.filter(b=>b.result===result);
+  if(from)filtered=filtered.filter(b=>b.date>=from);
+  if(to)filtered=filtered.filter(b=>b.date<=to);
+  filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById("betsTable").innerHTML=buildTable(filtered,true);
+}
+
+function renderCalendar(){
+  const year=calendarDate.getFullYear(),month=calendarDate.getMonth();
+  const firstDay=new Date(year,month,1),lastDay=new Date(year,month+1,0);
+  const monthBets=bets.filter(b=>{const d=new Date(b.date+"T00:00:00");return d.getFullYear()===year&&d.getMonth()===month});
+  const monthStats=getStats(monthBets);
+  document.getElementById("calendarTitle").textContent=firstDay.toLocaleString("en-US",{month:"long",year:"numeric"});
+  setValue("monthProfit",formatMoney(monthStats.profit),monthStats.profit);
+  setValue("monthUnits",`${monthStats.units.toFixed(2)}u`,monthStats.units);
+  document.getElementById("monthRecord").textContent=`${monthStats.wins}-${monthStats.losses}-${monthStats.pushes}-${monthStats.cashouts}`;
+  setValue("monthRoi",formatPercent(monthStats.roi),monthStats.roi);
+
+  let html=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="day-name">${d}</div>`).join("");
+  for(let i=0;i<firstDay.getDay();i++)html+=`<div class="day empty"></div>`;
+  for(let day=1;day<=lastDay.getDate();day++){
+    const dateString=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const dayBets=bets.filter(b=>b.date===dateString);
+    const stats=getStats(dayBets);
+    html+=`<div class="day"><div class="day-number">${day}</div><div class="day-stat ${colorClass(stats.profit)}">P/L: ${formatMoney(stats.profit)}</div><div class="day-stat ${colorClass(stats.units)}">Units: ${stats.units.toFixed(2)}u</div><div class="day-stat">Rec: ${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}</div><div class="day-stat">Bets: ${dayBets.length}</div></div>`;
+  }
+  document.getElementById("calendarGrid").innerHTML=html;
+}
+
+function renderBankrollTransactions(){
+  const box=document.getElementById("bankrollTransactionsTable");
+  if(!bankrollTransactions.length){box.innerHTML=`<div class="note">No deposits or withdrawals yet.</div>`;return}
+  const rows=[...bankrollTransactions].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(i=>`<tr><td>${i.date}</td><td class="${i.type==="deposit"?"green":"red"}">${i.type.toUpperCase()}</td><td>${formatMoney(Number(i.amount))}</td><td>${escapeHtml(i.note||"")}</td><td><button class="danger" onclick="deleteBankrollTransaction('${i.id}')">DELETE</button></td></tr>`).join("");
+  box.innerHTML=`<table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderTicker(){
+  const stats=getStats(),bankrollStats=getBankrollStats();
+  document.getElementById("ticker").textContent=[`BANKROLL ${formatMoney(bankrollStats.currentBankroll)}`,`P/L ${formatMoney(stats.profit)}`,`ROI ${formatPercent(stats.roi)}`,`REC ${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}`,`UNITS ${stats.units.toFixed(2)}u`,`PENDING ${stats.pending}`].join("  |  ");
+}
+
+function renderAll(){
+  renderDashboard();
+  renderBetsTable();
+  renderCalendar();
+  renderBankrollTransactions();
+  renderBreakdowns();
+  renderMemorySuggestions();
+  renderTicker();
+}
+
+function resetForm(){
+  editingId=null;
+  document.getElementById("betForm").reset();
+  document.getElementById("date").valueAsDate=new Date();
+  document.getElementById("oddsFormat").value="decimal";
+  document.getElementById("betType").value="Moneyline";
+  document.querySelector("#betForm .primary").textContent="ADD BET";
+}
+
+function editBet(id){
+  const b=bets.find(item=>item.id===id);
+  if(!b)return;
+  editingId=id;
+  document.getElementById("date").value=b.date;
+  document.getElementById("sport").value=b.sport;
+  document.getElementById("event").value=b.event;
+  document.getElementById("market").value=b.market;
+  document.getElementById("betType").value=b.betType||"Other";
+  document.getElementById("odds").value=b.odds;
+  document.getElementById("oddsFormat").value=b.oddsFormat||"decimal";
+  document.getElementById("stake").value=b.stake;
+  document.getElementById("result").value=b.result;
+  document.getElementById("book").value=b.book||"";
+  document.getElementById("notes").value=b.notes||"";
+  document.querySelector("#betForm .primary").textContent="UPDATE BET";
+  switchTab("bets");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function deleteBet(id){
+  if(!confirm("Delete this bet?"))return;
+  bets=bets.filter(b=>b.id!==id);
+  saveBets();
+  renderAll();
+}
+
+function updateBetResult(id,newResult){
+  bets=bets.map(b=>b.id===id?{...b,result:newResult,cashoutAmount:newResult==="cashout"?b.cashoutAmount:0}:b);
+  saveBets();
+  renderAll();
+}
+
+function cashoutBet(id){
+  const bet=bets.find(b=>b.id===id);
+  if(!bet)return;
+  const current=bet.cashoutAmount?Number(bet.cashoutAmount).toFixed(2):"";
+  const value=prompt("Enter cashout amount received:",current);
+  if(value===null)return;
+  const cashoutAmount=Number(String(value).replace(/[$,\s]/g,""));
+  if(!Number.isFinite(cashoutAmount)||cashoutAmount<0){
+    alert("Enter a valid cashout amount.");
+    return;
+  }
+  bets=bets.map(b=>b.id===id?{...b,result:"cashout",cashoutAmount}:b);
+  saveBets();
+  renderAll();
+}
+
+function deleteBankrollTransaction(id){
+  if(!confirm("Delete this bankroll transaction?"))return;
+  bankrollTransactions=bankrollTransactions.filter(i=>i.id!==id);
+  saveBankrollTransactions();
+  renderAll();
+}
+
+function switchTab(tabId){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-button").forEach(b=>b.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add("active");
+  if(tabId==="dashboard")setTimeout(renderCharts,50);
+}
+
+document.querySelectorAll(".tab-button").forEach(button=>button.addEventListener("click",()=>switchTab(button.dataset.tab)));
+
+document.getElementById("betForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const existingBet=editingId?bets.find(item=>item.id===editingId):null;
+  let cashoutAmount=document.getElementById("result").value==="cashout"?Number(existingBet?.cashoutAmount||0):0;
+  if(document.getElementById("result").value==="cashout"&&!cashoutAmount){
+    const value=prompt("Enter cashout amount received:");
+    if(value===null)return;
+    cashoutAmount=Number(String(value).replace(/[$,\s]/g,""));
+    if(!Number.isFinite(cashoutAmount)||cashoutAmount<0){
+      alert("Enter a valid cashout amount.");
+      return;
+    }
+  }
+  const bet={
+    id:editingId||makeId(),
+    date:document.getElementById("date").value,
+    sport:document.getElementById("sport").value.trim(),
+    event:document.getElementById("event").value.trim(),
+    market:document.getElementById("market").value.trim(),
+    betType:document.getElementById("betType").value,
+    odds:Number(document.getElementById("odds").value),
+    oddsFormat:document.getElementById("oddsFormat").value,
+    stake:Number(document.getElementById("stake").value),
+    result:document.getElementById("result").value,
+    cashoutAmount,
+    book:document.getElementById("book").value.trim(),
+    notes:document.getElementById("notes").value.trim()
+  };
+  bets=editingId?bets.map(item=>item.id===editingId?bet:item):[...bets,bet];
+  saveBets();
+  resetForm();
+  renderAll();
+});
+
+document.getElementById("clearForm").addEventListener("click",resetForm);
+["search","filterResult","filterFrom","filterTo"].forEach(id=>document.getElementById(id).addEventListener("input",renderBetsTable));
+
+document.getElementById("resetFilters").addEventListener("click",()=>{
+  document.getElementById("search").value="";
+  document.getElementById("filterResult").value="all";
+  document.getElementById("filterFrom").value="";
+  document.getElementById("filterTo").value="";
+  renderBetsTable();
+});
+
+document.getElementById("prevMonth").addEventListener("click",()=>{calendarDate.setMonth(calendarDate.getMonth()-1);renderCalendar()});
+document.getElementById("nextMonth").addEventListener("click",()=>{calendarDate.setMonth(calendarDate.getMonth()+1);renderCalendar()});
+document.getElementById("todayMonth").addEventListener("click",()=>{calendarDate=new Date();renderCalendar()});
+
+document.getElementById("settingsForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const unitSize=Number(document.getElementById("unitSize").value);
+  const startingBankroll=Number(document.getElementById("startingBankroll").value||0);
+  if(unitSize<=0){alert("Unit size must be greater than zero.");return}
+  settings.unitSize=unitSize;
+  settings.startingBankroll=startingBankroll;
+  saveSettings();
+  renderAll();
+  alert("Settings saved.");
+});
+
+document.getElementById("bankrollForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  bankrollTransactions.push({
+    id:makeId(),
+    date:document.getElementById("bankrollDate").value,
+    type:document.getElementById("bankrollType").value,
+    amount:Number(document.getElementById("bankrollAmount").value),
+    note:document.getElementById("bankrollNote").value.trim()
+  });
+  saveBankrollTransactions();
+  document.getElementById("bankrollForm").reset();
+  document.getElementById("bankrollDate").valueAsDate=new Date();
+  renderAll();
+});
+
+document.getElementById("exportData").addEventListener("click",()=>{
+  const data={bets,settings,bankrollTransactions,exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="sports-bet-tracker-data.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("importData").addEventListener("click",()=>document.getElementById("importFile").click());
+
+document.getElementById("importFile").addEventListener("change",event=>{
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data.bets)){alert("Invalid data file.");return}
+      bets=data.bets;
+      settings={unitSize:100,startingBankroll:0,...(data.settings||{})};
+      bankrollTransactions=Array.isArray(data.bankrollTransactions)?data.bankrollTransactions:[];
+      saveBets();
+      saveSettings();
+      saveBankrollTransactions();
+      document.getElementById("unitSize").value=settings.unitSize;
+      document.getElementById("startingBankroll").value=settings.startingBankroll||0;
+      renderAll();
+      alert("Data imported.");
+    }catch{
+      alert("Could not import file.");
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById("authForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const email=document.getElementById("authEmail").value.trim();
+  const password=document.getElementById("authPassword").value;
+  if(!cloudConfigReady()){
+    alert("Cloud sync is not configured yet. Add your Supabase URL and anon key to config.js.");
+    return;
+  }
+  if(!email||!password){
+    alert("Enter an email and password.");
+    return;
+  }
+  await signInUser(email,password);
+  document.getElementById("authPassword").value="";
+});
+
+document.getElementById("createAccountButton").addEventListener("click",async()=>{
+  const email=document.getElementById("authEmail").value.trim();
+  const password=document.getElementById("authPassword").value;
+  if(!cloudConfigReady()){
+    alert("Cloud sync is not configured yet. Add your Supabase URL and anon key to config.js.");
+    return;
+  }
+  if(!email||!password){
+    alert("Enter an email and password.");
+    return;
+  }
+  await createAccount(email,password);
+  document.getElementById("authPassword").value="";
+});
+
+document.getElementById("signOutButton").addEventListener("click",async()=>{
+  if(supabaseClient)await supabaseClient.auth.signOut();
+});
+
+document.getElementById("wipeData").addEventListener("click",()=>{
+  if(!confirm("This will delete every saved bet and bankroll transaction. Continue?"))return;
+  bets=[];
+  bankrollTransactions=[];
+  saveBets();
+  saveBankrollTransactions();
+  renderAll();
+});
+
+document.getElementById("unitSize").value=settings.unitSize;
+document.getElementById("startingBankroll").value=settings.startingBankroll||0;
+document.getElementById("date").valueAsDate=new Date();
+document.getElementById("bankrollDate").valueAsDate=new Date();
+document.getElementById("oddsFormat").value="decimal";
+
+initCloud();
+</script>
+</body>
+</html>
