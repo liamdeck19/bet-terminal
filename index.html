@@ -9,8 +9,9 @@
 :root{--bg:#05070a;--line:#263544;--text:#d8f3ff;--muted:#7f99a8;--green:#00ff88;--red:#ff3b57;--yellow:#ffd166;--cyan:#00d9ff;--blue:#2f80ed}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;background:linear-gradient(rgba(0,217,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,255,.025) 1px,transparent 1px),var(--bg);background-size:24px 24px;color:var(--text)}
-header{border-bottom:1px solid var(--line);background:#070b10;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center;position:sticky;top:0;z-index:10}
+header{border-bottom:1px solid var(--line);background:#070b10;padding:14px 18px;display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;position:sticky;top:0;z-index:10}
 .brand{color:var(--cyan);font-size:20px;font-weight:800;letter-spacing:.4px}
+.tagline{color:var(--yellow);font-size:12px;font-weight:900;letter-spacing:1px;text-align:center;white-space:nowrap}
 .ticker{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 nav{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:#070b10}
 nav button{background:#0d151e;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:inherit;font-weight:700}
@@ -70,7 +71,7 @@ tr:hover td{background:rgba(0,217,255,.05)}
 @media(max-width:1000px){.grid,.month-summary{grid-template-columns:repeat(2,1fr)}form,.filters,.chart-grid{grid-template-columns:1fr}.chart-box.full,.panel.two{grid-column:auto}}
 @media(max-width:650px){
 body{padding-bottom:84px}
-header{display:block;padding:10px 12px}.brand{font-size:16px}.ticker{display:none}
+header{display:block;padding:10px 12px}.brand{font-size:16px}.tagline{margin-top:4px;text-align:left;font-size:10px}.ticker{display:none}
 .mobile-status-strip{display:flex;position:sticky;top:0;z-index:11;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:#070b10;color:var(--muted);font-size:12px}
 .mobile-status-strip strong{color:var(--green);font-size:15px}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:8px;background:#070b10;border-top:1px solid var(--line);border-bottom:0}
@@ -97,7 +98,8 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
 
 <body>
 <header>
-  <div class="brand">BET TERMINAL // LOCAL</div>
+  <div class="brand">EDGE LEDGER</div>
+  <div class="tagline">BUILT BY WINNERS, FOR WINNERS</div>
   <div class="ticker" id="ticker">INITIALIZING MARKET LEDGER...</div>
 </header>
 
@@ -156,7 +158,6 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
     <div class="chart-box"><div class="panel-title">Profit / Loss Trend</div><canvas id="profitChart"></canvas></div>
     <div class="chart-box"><div class="panel-title">Win Rate</div><canvas id="winRateChart"></canvas></div>
     <div class="chart-box full"><div class="panel-title">Bankroll Over Time</div><canvas id="bankrollChart"></canvas></div>
-    <div class="chart-box full"><div class="panel-title">Total Risked vs Won</div><canvas id="riskWonChart"></canvas></div>
   </div>
   </div>
 
@@ -321,7 +322,7 @@ let syncTimer=null;
 let isLoadingCloud=false;
 let editingId=null;
 let calendarDate=new Date();
-let profitChart,winRateChart,riskWonChart,bankrollChart;
+let profitChart,winRateChart,bankrollChart;
 
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"});
 
@@ -533,11 +534,9 @@ function renderCharts(){
   const profitLabels=[],profitData=[];
   settled.forEach(b=>{runningProfit+=getProfit(b);profitLabels.push(b.date);profitData.push(Number(runningProfit.toFixed(2)))});
   const stats=getStats();
-  const totalWon=bets.filter(b=>b.result==="win"||b.result==="cashout").reduce((sum,b)=>sum+Math.max(getProfit(b),0),0);
   const chartText="#d8f3ff",chartGrid="rgba(216,243,255,.12)";
   if(profitChart)profitChart.destroy();
   if(winRateChart)winRateChart.destroy();
-  if(riskWonChart)riskWonChart.destroy();
   if(bankrollChart)bankrollChart.destroy();
 
   profitChart=new Chart(document.getElementById("profitChart"),{type:"line",data:{labels:profitLabels,datasets:[{label:"Running P/L",data:profitData,borderColor:"#00d9ff",backgroundColor:"rgba(0,217,255,.15)",tension:.25,fill:true,pointRadius:3}]},options:chartLineOptions(chartText,chartGrid,true)});
@@ -546,8 +545,6 @@ function renderCharts(){
 
   const bankrollTimeline=getBankrollTimeline();
   bankrollChart=new Chart(document.getElementById("bankrollChart"),{type:"line",data:{labels:bankrollTimeline.labels,datasets:[{label:"Bankroll",data:bankrollTimeline.data,borderColor:"#00ff88",backgroundColor:"rgba(0,255,136,.12)",tension:.25,fill:true,pointRadius:3}]},options:chartLineOptions(chartText,chartGrid)});
-
-  riskWonChart=new Chart(document.getElementById("riskWonChart"),{type:"bar",data:{labels:["Total Risked","Total Won","Net P/L"],datasets:[{label:"Dollars",data:[Number(stats.risked.toFixed(2)),Number(totalWon.toFixed(2)),Number(stats.profit.toFixed(2))],backgroundColor:["#2f80ed","#00ff88",stats.profit>=0?"#00d9ff":"#ff3b57"],borderWidth:1}]},options:chartLineOptions(chartText,chartGrid)});
 }
 
 function renderDashboard(){
