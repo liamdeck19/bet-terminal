@@ -8,17 +8,17 @@
 <style>
 :root{--bg:#05070a;--line:#263544;--text:#d8f3ff;--muted:#7f99a8;--green:#00ff88;--red:#ff3b57;--yellow:#ffd166;--cyan:#00d9ff;--blue:#2f80ed}
 *{box-sizing:border-box}
-body{margin:0;font-family:Consolas,"Courier New",monospace;background:linear-gradient(rgba(0,217,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,255,.035) 1px,transparent 1px),var(--bg);background-size:24px 24px;color:var(--text)}
+body{margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;background:linear-gradient(rgba(0,217,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,255,.025) 1px,transparent 1px),var(--bg);background-size:24px 24px;color:var(--text)}
 header{border-bottom:1px solid var(--line);background:#070b10;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center;position:sticky;top:0;z-index:10}
-.brand{color:var(--cyan);font-size:20px;font-weight:bold;letter-spacing:1px}
+.brand{color:var(--cyan);font-size:20px;font-weight:800;letter-spacing:.4px}
 .ticker{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 nav{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:#070b10}
-nav button{background:#0d151e;color:var(--muted);border:1px solid var(--line);padding:10px 14px;cursor:pointer;font-family:inherit;font-weight:bold}
+nav button{background:#0d151e;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:inherit;font-weight:700}
 nav button.active{color:var(--bg);background:var(--cyan);border-color:var(--cyan)}
 main{padding:18px;max-width:1400px;margin:0 auto}
 .tab{display:none}.tab.active{display:block}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
-.card,.panel,.chart-box{background:rgba(11,17,24,.96);border:1px solid var(--line);padding:14px}
+.card,.panel,.chart-box{background:rgba(11,17,24,.96);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
 .card{min-height:100px}.panel{margin-bottom:16px}.panel.two{grid-column:span 2}
 .label{color:var(--muted);font-size:12px;text-transform:uppercase;margin-bottom:10px}
 .value{font-size:28px;font-weight:bold}
@@ -29,11 +29,11 @@ main{padding:18px;max-width:1400px;margin:0 auto}
 .chart-box canvas{width:100%!important;height:260px!important}
 form{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 input,select,button{font-family:inherit}
-input,select{width:100%;background:#05080c;border:1px solid var(--line);color:var(--text);padding:10px}
+input,select{width:100%;background:#05080c;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px}
 input:focus,select:focus{outline:1px solid var(--cyan)}
-.primary{background:var(--cyan);color:#001014;border:1px solid var(--cyan);padding:10px;cursor:pointer;font-weight:bold}
-.danger{background:transparent;color:var(--red);border:1px solid var(--red);padding:7px 9px;cursor:pointer}
-.small-button{background:transparent;color:var(--cyan);border:1px solid var(--cyan);padding:7px 9px;cursor:pointer}
+.primary{background:var(--cyan);color:#001014;border:1px solid var(--cyan);border-radius:10px;padding:10px;cursor:pointer;font-weight:800}
+.danger{background:transparent;color:var(--red);border:1px solid var(--red);border-radius:9px;padding:7px 9px;cursor:pointer}
+.small-button{background:transparent;color:var(--cyan);border:1px solid var(--cyan);border-radius:9px;padding:7px 9px;cursor:pointer}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;vertical-align:middle}
 th{color:var(--cyan);background:#071018}
@@ -44,15 +44,19 @@ tr:hover td{background:rgba(0,217,255,.05)}
 .calendar-title{color:var(--cyan);font-size:20px;font-weight:bold}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 .day-name{color:var(--muted);text-align:center;padding:8px;border-bottom:1px solid var(--line)}
-.day{min-height:120px;border:1px solid var(--line);background:#080d13;padding:8px}
+.day{min-height:120px;border:1px solid var(--line);background:#080d13;padding:8px;border-radius:12px}
 .day.empty{opacity:.25}.day-number{color:var(--text);font-weight:bold;margin-bottom:8px}.day-stat{font-size:12px;line-height:1.5}
+.day-profit-card{margin-top:16px;border:1px solid rgba(216,243,255,.08);border-radius:10px;padding:9px;text-align:center;background:rgba(255,209,102,.08)}
+.day-profit-card.green{background:rgba(0,255,136,.11);border-color:rgba(0,255,136,.16)}
+.day-profit-card.red{background:rgba(255,59,87,.12);border-color:rgba(255,59,87,.18)}
+.day-profit-main{font-weight:800;font-size:13px}.day-profit-sub{font-size:11px;color:var(--muted);margin-top:2px}.day-profit-units{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.22);font-size:11px}
 .month-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.summary-box{border:1px solid var(--line);background:#080d13;padding:10px}
+.summary-box{border:1px solid var(--line);border-radius:12px;background:#080d13;padding:10px}
 .two{grid-column:span 2}
 .status{padding:3px 7px;border:1px solid var(--line);display:inline-block;font-size:12px}
 .status.win{color:var(--green);border-color:var(--green)}.status.loss{color:var(--red);border-color:var(--red)}.status.push{color:var(--yellow);border-color:var(--yellow)}.status.pending{color:var(--muted)}.status.cashout{color:var(--cyan);border-color:var(--cyan)}
 .quick-results{display:flex;gap:4px;margin-top:6px}
-.quick-results button{width:26px;height:24px;padding:0;font-size:12px;font-weight:bold;cursor:pointer;background:#05080c;border:1px solid var(--line)}
+.quick-results button{width:26px;height:24px;padding:0;font-size:12px;font-weight:bold;cursor:pointer;background:#05080c;border:1px solid var(--line);border-radius:8px}
 .quick-win{color:var(--green);border-color:var(--green)!important}.quick-loss{color:var(--red);border-color:var(--red)!important}.quick-push{color:var(--yellow);border-color:var(--yellow)!important}.quick-cashout{color:var(--cyan);border-color:var(--cyan)!important}.quick-pending{color:var(--muted)}
 .auth-panel{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:#080d13}
 .auth-panel form{display:flex;grid-template-columns:none;gap:8px;align-items:center}
@@ -507,8 +511,8 @@ function getBankrollStats(){
   return{deposits,withdrawals,bettingProfit,currentBankroll};
 }
 
-function chartLineOptions(chartText,chartGrid){
-  return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartText}}},scales:{x:{ticks:{color:chartText},grid:{color:chartGrid}},y:{ticks:{color:chartText,callback:value=>"$"+value},grid:{color:chartGrid}}}};
+function chartLineOptions(chartText,chartGrid,wholeDollars=false){
+  return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartText}}},scales:{x:{ticks:{color:chartText},grid:{color:chartGrid}},y:{ticks:{color:chartText,precision:wholeDollars?0:undefined,callback:value=>"$"+(wholeDollars?Math.round(value):value)},grid:{color:chartGrid}}}};
 }
 
 function getBankrollTimeline(){
@@ -536,7 +540,7 @@ function renderCharts(){
   if(riskWonChart)riskWonChart.destroy();
   if(bankrollChart)bankrollChart.destroy();
 
-  profitChart=new Chart(document.getElementById("profitChart"),{type:"line",data:{labels:profitLabels,datasets:[{label:"Running P/L",data:profitData,borderColor:"#00d9ff",backgroundColor:"rgba(0,217,255,.15)",tension:.25,fill:true,pointRadius:3}]},options:chartLineOptions(chartText,chartGrid)});
+  profitChart=new Chart(document.getElementById("profitChart"),{type:"line",data:{labels:profitLabels,datasets:[{label:"Running P/L",data:profitData,borderColor:"#00d9ff",backgroundColor:"rgba(0,217,255,.15)",tension:.25,fill:true,pointRadius:3}]},options:chartLineOptions(chartText,chartGrid,true)});
 
   winRateChart=new Chart(document.getElementById("winRateChart"),{type:"doughnut",data:{labels:["Wins","Losses","Pushes","Cashouts"],datasets:[{data:[stats.wins,stats.losses,stats.pushes,stats.cashouts],backgroundColor:["#00ff88","#ff3b57","#ffd166","#00d9ff"],borderColor:"#05070a",borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartText}}}}});
 
@@ -685,7 +689,8 @@ function renderCalendar(){
     const dateString=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     const dayBets=bets.filter(b=>b.date===dateString);
     const stats=getStats(dayBets);
-    html+=`<div class="day"><div class="day-number">${day}</div><div class="day-stat ${colorClass(stats.profit)}">P/L: ${formatMoney(stats.profit)}</div><div class="day-stat ${colorClass(stats.units)}">Units: ${stats.units.toFixed(2)}u</div><div class="day-stat">Rec: ${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}</div><div class="day-stat">Bets: ${dayBets.length}</div></div>`;
+    const activeDay=dayBets.length>0||stats.profit!==0;
+    html+=`<div class="day"><div class="day-number">${day}</div>${activeDay?`<div class="day-profit-card ${colorClass(stats.profit)}"><div class="day-profit-main">${formatMoney(stats.profit)}</div><div class="day-profit-sub">${formatPercent(stats.roi)} | ${dayBets.length} bet${dayBets.length===1?"":"s"}</div><div class="day-profit-units ${colorClass(stats.units)}">${stats.units.toFixed(2)}u</div></div>`:""}</div>`;
     if(dayBets.length||stats.profit!==0){
       mobileHtml+=`<div class="mobile-day-row"><div class="mobile-day-num">${day}</div><div class="mobile-day-stats"><div class="${colorClass(stats.profit)}">P/L: ${formatMoney(stats.profit)}</div><div class="${colorClass(stats.units)}">Units: ${stats.units.toFixed(2)}u</div><div>Rec: ${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}</div><div>Bets: ${dayBets.length}</div></div></div>`;
     }
