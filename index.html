@@ -59,9 +59,35 @@ tr:hover td{background:rgba(0,217,255,.05)}
 .auth-panel input{min-width:220px}
 .auth-status{color:var(--muted);font-size:12px}
 .hidden{display:none!important}
+.mobile-status-strip,.mobile-bet-cards,.mobile-calendar-list,.collapse-toggle{display:none}
+.open-bets-panel{display:none;border-color:rgba(0,217,255,.55)}
+.mobile-collapse-body{display:contents}
 .note{color:var(--muted);font-size:12px;margin-top:8px}
 @media(max-width:1000px){.grid,.month-summary{grid-template-columns:repeat(2,1fr)}form,.filters,.chart-grid{grid-template-columns:1fr}.chart-box.full,.panel.two{grid-column:auto}}
-@media(max-width:650px){header{display:block}.ticker{margin-top:8px}nav{overflow-x:auto}.auth-panel,.auth-panel form{display:block}.auth-panel input,.auth-panel button{margin-top:8px}.grid,.month-summary,form,.filters{grid-template-columns:1fr}table{font-size:12px}.calendar{grid-template-columns:1fr}.day-name{display:none}}
+@media(max-width:650px){
+body{padding-bottom:84px}
+header{display:block;padding:10px 12px}.brand{font-size:16px}.ticker{display:none}
+.mobile-status-strip{display:flex;position:sticky;top:0;z-index:11;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:#070b10;color:var(--muted);font-size:12px}
+.mobile-status-strip strong{color:var(--green);font-size:15px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:8px;background:#070b10;border-top:1px solid var(--line);border-bottom:0}
+nav button{min-height:52px;padding:7px 4px;font-size:11px;border-left:0}
+main{padding:12px}.auth-panel,.auth-panel form{display:block}.auth-panel{padding:10px 12px}.auth-panel input,.auth-panel button{margin-top:8px;min-width:0;width:100%}
+.grid,.month-summary,form,.filters{grid-template-columns:1fr}
+.open-bets-panel{display:block}
+.card{min-height:auto;padding:12px}.value{font-size:24px}
+#betForm{gap:12px}#betForm input,#betForm select,.filters input,.filters select{min-height:46px;font-size:16px}#betForm .primary{position:sticky;bottom:74px;z-index:9;min-height:48px;box-shadow:0 0 0 1px var(--bg),0 -8px 18px rgba(0,0,0,.38)}
+.chart-box{height:250px}.chart-box canvas{height:205px!important}
+.quick-results{gap:8px}.quick-results button{width:42px;height:40px;font-size:14px}
+table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;gap:10px}
+.mobile-bet-card{border:1px solid var(--line);background:#080d13;padding:12px}
+.mobile-bet-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+.mobile-bet-event{font-weight:bold;color:var(--text);line-height:1.35}.mobile-bet-sub{color:var(--muted);font-size:12px;line-height:1.45}.mobile-bet-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.mobile-bet-metric{border:1px solid var(--line);padding:7px;background:#05080c}.mobile-bet-metric span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;margin-bottom:3px}.mobile-card-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}.mobile-card-actions .small-button,.mobile-card-actions .danger{min-height:38px}
+.calendar{display:none}.mobile-calendar-list{display:grid;gap:8px}.mobile-day-row{display:grid;grid-template-columns:48px 1fr;gap:10px;border:1px solid var(--line);background:#080d13;padding:10px}.mobile-day-num{font-size:20px;font-weight:bold;color:var(--cyan)}.mobile-day-stats{font-size:12px;line-height:1.55}
+.day-name{display:none}
+.collapse-toggle{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:10px;background:#071018;color:var(--cyan);border:1px solid var(--line);padding:10px;font-weight:bold}
+.collapse-toggle::after{content:"OPEN";color:var(--muted);font-size:11px}.collapse-toggle.collapsed::after{content:"CLOSED"}
+.mobile-collapse-body{display:block}.mobile-collapse-body.collapsed{display:none}
+}
 </style>
 </head>
 
@@ -70,6 +96,11 @@ tr:hover td{background:rgba(0,217,255,.05)}
   <div class="brand">BET TERMINAL // LOCAL</div>
   <div class="ticker" id="ticker">INITIALIZING MARKET LEDGER...</div>
 </header>
+
+<div class="mobile-status-strip">
+  <div>Bankroll <strong id="mobileBankroll">$0.00</strong></div>
+  <div id="mobileSyncStatus">Local</div>
+</div>
 
 <nav>
   <button class="tab-button active" data-tab="dashboard">Dashboard</button>
@@ -110,19 +141,33 @@ tr:hover td{background:rgba(0,217,255,.05)}
     <div class="card"><div class="label">Pending Bets</div><div class="value yellow" id="pendingCount">0</div></div>
   </div>
 
+  <div class="panel open-bets-panel">
+    <div class="panel-title">Open Bets</div>
+    <div id="openBetsTable"></div>
+  </div>
+
+  <button class="collapse-toggle" data-collapse-target="chartsBody">Charts</button>
+  <div class="mobile-collapse-body" id="chartsBody">
   <div class="chart-grid">
     <div class="chart-box"><div class="panel-title">Profit / Loss Trend</div><canvas id="profitChart"></canvas></div>
     <div class="chart-box"><div class="panel-title">Win Rate</div><canvas id="winRateChart"></canvas></div>
     <div class="chart-box full"><div class="panel-title">Bankroll Over Time</div><canvas id="bankrollChart"></canvas></div>
     <div class="chart-box full"><div class="panel-title">Total Risked vs Won</div><canvas id="riskWonChart"></canvas></div>
   </div>
+  </div>
 
+  <button class="collapse-toggle" data-collapse-target="breakdownsBody">Breakdowns</button>
+  <div class="mobile-collapse-body" id="breakdownsBody">
   <div class="grid">
     <div class="panel two"><div class="panel-title">Sport / League Breakdown</div><div id="sportBreakdown"></div></div>
     <div class="panel two"><div class="panel-title">Bet Type Breakdown</div><div id="betTypeBreakdown"></div></div>
   </div>
+  </div>
 
-  <div class="panel"><div class="panel-title">Recent Action</div><div id="recentTable"></div></div>
+  <button class="collapse-toggle" data-collapse-target="recentBody">Recent Action</button>
+  <div class="mobile-collapse-body" id="recentBody">
+    <div class="panel"><div class="panel-title">Recent Action</div><div id="recentTable"></div></div>
+  </div>
 </section>
 
 <section id="bets" class="tab">
@@ -213,6 +258,7 @@ tr:hover td{background:rgba(0,217,255,.05)}
     </div>
 
     <div class="calendar" id="calendarGrid"></div>
+    <div class="mobile-calendar-list" id="mobileCalendarList"></div>
   </div>
 </section>
 
@@ -304,9 +350,14 @@ function cloudConfigReady(){
 
 function setCloudStatus(message,isOnline=false){
   const status=document.getElementById("cloudStatus");
+  const mobileStatus=document.getElementById("mobileSyncStatus");
   if(!status)return;
   status.textContent=message;
   status.className="auth-status "+(isOnline?"green":"");
+  if(mobileStatus){
+    mobileStatus.textContent=isOnline?"Synced":"Local";
+    mobileStatus.className=isOnline?"green":"";
+  }
 }
 
 async function initCloud(){
@@ -506,7 +557,10 @@ function renderDashboard(){
   document.getElementById("risked").textContent=formatMoney(stats.risked);
   document.getElementById("winRate").textContent=formatPercent(stats.winRate);
   document.getElementById("pendingCount").textContent=stats.pending;
+  document.getElementById("mobileBankroll").textContent=formatMoney(bankrollStats.currentBankroll);
   const recent=[...bets].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  const openBets=[...bets].filter(b=>b.result==="pending").sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById("openBetsTable").innerHTML=buildTable(openBets,true);
   document.getElementById("recentTable").innerHTML=buildTable(recent,false);
   renderCharts();
 }
@@ -541,30 +595,62 @@ function renderMemorySuggestions(){
   document.getElementById("bookSuggestions").innerHTML=books.map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
 }
 
+function getBetDisplay(b){
+  const profit=getProfit(b);
+  const units=settings.unitSize>0?profit/settings.unitSize:0;
+  const oddsText=(b.oddsFormat||"decimal")==="american"?`${Number(b.odds)>0?"+":""}${b.odds}`:b.odds;
+  const resultText=b.result==="cashout"&&b.cashoutAmount?`CASHOUT ${formatMoney(Number(b.cashoutAmount))}`:b.result.toUpperCase();
+  return{profit,units,oddsText,resultText};
+}
+
+function quickResultControls(id){
+  return `<div class="quick-results"><button onclick="updateBetResult('${id}','win')" class="quick-win">W</button><button onclick="updateBetResult('${id}','loss')" class="quick-loss">L</button><button onclick="updateBetResult('${id}','push')" class="quick-push">P</button><button onclick="cashoutBet('${id}')" class="quick-cashout">$</button><button onclick="updateBetResult('${id}','pending')" class="quick-pending">?</button></div>`;
+}
+
+function buildMobileBetCards(list,showActions=true){
+  if(list.length===0)return `<div class="mobile-bet-cards"><div class="note">No bets found.</div></div>`;
+  return `<div class="mobile-bet-cards">${list.map(b=>{
+    const display=getBetDisplay(b);
+    return `<div class="mobile-bet-card">
+      <div class="mobile-bet-top">
+        <div>
+          <div class="mobile-bet-event">${escapeHtml(b.event)}</div>
+          <div class="mobile-bet-sub">${escapeHtml(b.sport)} | ${escapeHtml(b.betType||"Other")} | ${escapeHtml(b.market)}</div>
+          <div class="mobile-bet-sub">${b.date}${b.book?` | ${escapeHtml(b.book)}`:""}</div>
+        </div>
+        <span class="status ${b.result}">${display.resultText}</span>
+      </div>
+      <div class="mobile-bet-metrics">
+        <div class="mobile-bet-metric"><span>Stake</span>${formatMoney(Number(b.stake))}</div>
+        <div class="mobile-bet-metric"><span>Odds</span>${display.oddsText}</div>
+        <div class="mobile-bet-metric"><span>P/L</span><strong class="${colorClass(display.profit)}">${formatMoney(display.profit)}</strong></div>
+      </div>
+      ${showActions?`<div class="mobile-card-actions">${quickResultControls(b.id)}<div><button class="small-button" onclick="editBet('${b.id}')">EDIT</button> <button class="danger" onclick="deleteBet('${b.id}')">DELETE</button></div></div>`:""}
+    </div>`;
+  }).join("")}</div>`;
+}
+
 function buildTable(list,showActions=true){
   if(list.length===0)return `<div class="note">No bets found.</div>`;
   const rows=list.map(b=>{
-    const profit=getProfit(b);
-    const units=settings.unitSize>0?profit/settings.unitSize:0;
-    const oddsText=(b.oddsFormat||"decimal")==="american"?`${Number(b.odds)>0?"+":""}${b.odds}`:b.odds;
-    const resultText=b.result==="cashout"&&b.cashoutAmount?`CASHOUT ${formatMoney(Number(b.cashoutAmount))}`:b.result.toUpperCase();
+    const display=getBetDisplay(b);
     return `<tr>
       <td>${b.date}</td>
       <td>${escapeHtml(b.sport)}</td>
       <td>${escapeHtml(b.event)}</td>
       <td>${escapeHtml(b.market)}</td>
       <td>${escapeHtml(b.betType||"Other")}</td>
-      <td>${oddsText}</td>
+      <td>${display.oddsText}</td>
       <td>${escapeHtml(b.oddsFormat||"decimal")}</td>
       <td>${formatMoney(Number(b.stake))}</td>
-      <td><span class="status ${b.result}">${resultText}</span>${showActions?`<div class="quick-results"><button onclick="updateBetResult('${b.id}','win')" class="quick-win">W</button><button onclick="updateBetResult('${b.id}','loss')" class="quick-loss">L</button><button onclick="updateBetResult('${b.id}','push')" class="quick-push">P</button><button onclick="cashoutBet('${b.id}')" class="quick-cashout">$</button><button onclick="updateBetResult('${b.id}','pending')" class="quick-pending">?</button></div>`:""}</td>
-      <td class="${colorClass(profit)}">${formatMoney(profit)}</td>
-      <td class="${colorClass(units)}">${units.toFixed(2)}u</td>
+      <td><span class="status ${b.result}">${display.resultText}</span>${showActions?quickResultControls(b.id):""}</td>
+      <td class="${colorClass(display.profit)}">${formatMoney(display.profit)}</td>
+      <td class="${colorClass(display.units)}">${display.units.toFixed(2)}u</td>
       <td>${escapeHtml(b.book||"")}</td>
       ${showActions?`<td><button class="small-button" onclick="editBet('${b.id}')">EDIT</button> <button class="danger" onclick="deleteBet('${b.id}')">DELETE</button></td>`:""}
     </tr>`;
   }).join("");
-  return `<table><thead><tr><th>Date</th><th>Sport</th><th>Event</th><th>Market</th><th>Type</th><th>Odds</th><th>Format</th><th>Stake</th><th>Result</th><th>P/L</th><th>Units</th><th>Book</th>${showActions?"<th>Actions</th>":""}</tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="desktop-table"><thead><tr><th>Date</th><th>Sport</th><th>Event</th><th>Market</th><th>Type</th><th>Odds</th><th>Format</th><th>Stake</th><th>Result</th><th>P/L</th><th>Units</th><th>Book</th>${showActions?"<th>Actions</th>":""}</tr></thead><tbody>${rows}</tbody></table>${buildMobileBetCards(list,showActions)}`;
 }
 
 function renderBetsTable(){
@@ -593,14 +679,19 @@ function renderCalendar(){
   setValue("monthRoi",formatPercent(monthStats.roi),monthStats.roi);
 
   let html=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="day-name">${d}</div>`).join("");
+  let mobileHtml="";
   for(let i=0;i<firstDay.getDay();i++)html+=`<div class="day empty"></div>`;
   for(let day=1;day<=lastDay.getDate();day++){
     const dateString=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     const dayBets=bets.filter(b=>b.date===dateString);
     const stats=getStats(dayBets);
     html+=`<div class="day"><div class="day-number">${day}</div><div class="day-stat ${colorClass(stats.profit)}">P/L: ${formatMoney(stats.profit)}</div><div class="day-stat ${colorClass(stats.units)}">Units: ${stats.units.toFixed(2)}u</div><div class="day-stat">Rec: ${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}</div><div class="day-stat">Bets: ${dayBets.length}</div></div>`;
+    if(dayBets.length||stats.profit!==0){
+      mobileHtml+=`<div class="mobile-day-row"><div class="mobile-day-num">${day}</div><div class="mobile-day-stats"><div class="${colorClass(stats.profit)}">P/L: ${formatMoney(stats.profit)}</div><div class="${colorClass(stats.units)}">Units: ${stats.units.toFixed(2)}u</div><div>Rec: ${stats.wins}-${stats.losses}-${stats.pushes}-${stats.cashouts}</div><div>Bets: ${dayBets.length}</div></div></div>`;
+    }
   }
   document.getElementById("calendarGrid").innerHTML=html;
+  document.getElementById("mobileCalendarList").innerHTML=mobileHtml||`<div class="note">No bets logged this month.</div>`;
 }
 
 function renderBankrollTransactions(){
@@ -623,6 +714,23 @@ function renderAll(){
   renderBreakdowns();
   renderMemorySuggestions();
   renderTicker();
+  setupMobileCollapses();
+}
+
+function setupMobileCollapses(){
+  document.querySelectorAll(".collapse-toggle").forEach(button=>{
+    const target=document.getElementById(button.dataset.collapseTarget);
+    if(!target||button.dataset.ready)return;
+    button.dataset.ready="true";
+    if(window.matchMedia("(max-width:650px)").matches&&button.dataset.collapseTarget!=="recentBody"){
+      target.classList.add("collapsed");
+      button.classList.add("collapsed");
+    }
+    button.addEventListener("click",()=>{
+      target.classList.toggle("collapsed");
+      button.classList.toggle("collapsed",target.classList.contains("collapsed"));
+    });
+  });
 }
 
 function resetForm(){
