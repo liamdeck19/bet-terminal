@@ -483,6 +483,7 @@ function getProfit(bet){
   if(bet.result==="pending"||bet.result==="push")return 0;
   if(bet.result==="cashout")return Number(bet.cashoutAmount||0)-stake;
   if(bet.result==="loss")return -stake;
+  if(bet.result==="win"&&Number(bet.returnAmount)>0)return Number(bet.returnAmount)-stake;
   if(oddsFormat==="decimal")return stake*(odds-1);
   if(odds>0)return stake*(odds/100);
   return stake*(100/Math.abs(odds));
@@ -799,7 +800,8 @@ function editBet(id){
   document.getElementById("odds").value=b.odds;
   document.getElementById("oddsFormat").value=b.oddsFormat||"decimal";
   document.getElementById("stake").value=b.stake;
-  syncReturnFromOdds();
+  if(Number(b.returnAmount)>0)document.getElementById("returnAmount").value=Number(b.returnAmount).toFixed(2);
+  else syncReturnFromOdds();
   document.getElementById("result").value=b.result;
   document.getElementById("book").value=b.book||"";
   document.getElementById("notes").value=b.notes||"";
@@ -862,6 +864,7 @@ document.getElementById("betForm").addEventListener("submit",event=>{
     alert("Enter odds or a return amount so odds can be calculated.");
     return;
   }
+  const exactReturnAmount=Number(String(document.getElementById("returnAmount").value).replace(/[$,\s]/g,""))||0;
   const existingBet=editingId?bets.find(item=>item.id===editingId):null;
   let cashoutAmount=document.getElementById("result").value==="cashout"?Number(existingBet?.cashoutAmount||0):0;
   if(document.getElementById("result").value==="cashout"&&!cashoutAmount){
@@ -883,6 +886,7 @@ document.getElementById("betForm").addEventListener("submit",event=>{
     odds:submittedOdds,
     oddsFormat:document.getElementById("oddsFormat").value,
     stake:Number(document.getElementById("stake").value),
+    returnAmount:exactReturnAmount,
     result:document.getElementById("result").value,
     cashoutAmount,
     book:document.getElementById("book").value.trim(),
@@ -903,7 +907,7 @@ document.getElementById("stake").addEventListener("input",()=>{
 });
 document.getElementById("oddsFormat").addEventListener("change",()=>{
   if(document.getElementById("returnAmount").value)syncOddsFromReturn();
-  syncReturnFromOdds();
+  else syncReturnFromOdds();
 });
 ["search","filterResult","filterFrom","filterTo"].forEach(id=>document.getElementById(id).addEventListener("input",renderBetsTable));
 
