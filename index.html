@@ -22,6 +22,8 @@ main{padding:18px;max-width:1400px;margin:0 auto}
 .card,.panel,.chart-box{background:rgba(11,17,24,.96);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
 .card{min-height:100px}.panel{margin-bottom:16px}.panel.two{grid-column:span 2}
 .label{color:var(--muted);font-size:12px;text-transform:uppercase;margin-bottom:10px}
+.field-label{display:block;color:var(--cyan);font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:6px}
+.field-help{color:var(--muted);font-size:11px;line-height:1.35;margin-top:5px}
 .value{font-size:28px;font-weight:bold}
 .green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}.cyan{color:var(--cyan)}
 .panel-title{color:var(--cyan);font-weight:bold;margin-bottom:12px;text-transform:uppercase}
@@ -272,8 +274,16 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
   <div class="panel">
     <div class="panel-title">Settings</div>
     <form id="settingsForm">
-      <input type="number" id="unitSize" placeholder="Unit Size $" step="0.01" min="0.01" />
-      <input type="number" id="startingBankroll" placeholder="Starting Bankroll $" step="0.01" min="0" />
+      <div>
+        <label class="field-label" for="unitSize">Unit Size</label>
+        <input type="number" id="unitSize" placeholder="Example: 25" step="0.01" min="0.01" />
+        <div class="field-help">How many dollars equal 1 unit.</div>
+      </div>
+      <div>
+        <label class="field-label" for="startingBankroll">Starting Bankroll</label>
+        <input type="number" id="startingBankroll" placeholder="Example: 500" step="0.01" min="0" />
+        <div class="field-help">Your bankroll before deposits, withdrawals, and tracked bet results.</div>
+      </div>
       <button class="primary" type="submit">SAVE SETTINGS</button>
     </form>
     <div class="note">Current bankroll equals starting bankroll plus deposits minus withdrawals plus betting profit/loss.</div>
