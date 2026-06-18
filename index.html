@@ -197,7 +197,7 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
         <option value="Other">Other</option>
       </select>
 
-      <input type="number" id="odds" placeholder="Odds" step="0.01" required />
+      <input type="number" id="odds" placeholder="Odds" step="0.01" />
 
       <select id="oddsFormat">
         <option value="decimal">Decimal Odds</option>
@@ -205,6 +205,7 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
       </select>
 
       <input type="number" id="stake" placeholder="Stake $" step="0.01" required />
+      <input type="number" id="returnAmount" placeholder="Return $" step="0.01" />
 
       <select id="result">
         <option value="pending">Pending</option>
@@ -487,6 +488,48 @@ function getProfit(bet){
   return stake*(100/Math.abs(odds));
 }
 
+function getReturnFromOdds(stake,odds,oddsFormat){
+  stake=Number(stake);
+  odds=Number(odds);
+  if(!stake||stake<=0||!odds)return "";
+  if(oddsFormat==="decimal"){
+    if(odds<=1)return "";
+    return stake*odds;
+  }
+  if(odds>0)return stake+(stake*(odds/100));
+  return stake+(stake*(100/Math.abs(odds)));
+}
+
+function getOddsFromReturn(stake,returnAmount,oddsFormat){
+  stake=Number(stake);
+  returnAmount=Number(returnAmount);
+  if(!stake||stake<=0||!returnAmount||returnAmount<=stake)return "";
+  const decimalOdds=returnAmount/stake;
+  if(oddsFormat==="decimal")return decimalOdds;
+  if(decimalOdds>=2)return (decimalOdds-1)*100;
+  return -100/(decimalOdds-1);
+}
+
+function syncReturnFromOdds(){
+  const stake=Number(document.getElementById("stake").value);
+  const odds=Number(document.getElementById("odds").value);
+  const oddsFormat=document.getElementById("oddsFormat").value;
+  const value=getReturnFromOdds(stake,odds,oddsFormat);
+  document.getElementById("returnAmount").value=value?Number(value).toFixed(2):"";
+}
+
+function syncOddsFromReturn(){
+  const stake=Number(document.getElementById("stake").value);
+  const returnAmount=Number(document.getElementById("returnAmount").value);
+  const oddsFormat=document.getElementById("oddsFormat").value;
+  const value=getOddsFromReturn(stake,returnAmount,oddsFormat);
+  if(!value){
+    document.getElementById("odds").value="";
+    return;
+  }
+  document.getElementById("odds").value=oddsFormat==="decimal"?Number(value).toFixed(2):Math.round(value);
+}
+
 function getSettledBets(list=bets){return list.filter(bet=>bet.result!=="pending")}
 function getStats(list=bets){
   const settled=getSettledBets(list);
@@ -756,6 +799,7 @@ function editBet(id){
   document.getElementById("odds").value=b.odds;
   document.getElementById("oddsFormat").value=b.oddsFormat||"decimal";
   document.getElementById("stake").value=b.stake;
+  syncReturnFromOdds();
   document.getElementById("result").value=b.result;
   document.getElementById("book").value=b.book||"";
   document.getElementById("notes").value=b.notes||"";
@@ -812,6 +856,12 @@ document.querySelectorAll(".tab-button").forEach(button=>button.addEventListener
 
 document.getElementById("betForm").addEventListener("submit",event=>{
   event.preventDefault();
+  if(!document.getElementById("odds").value&&document.getElementById("returnAmount").value)syncOddsFromReturn();
+  const submittedOdds=Number(document.getElementById("odds").value);
+  if(!submittedOdds){
+    alert("Enter odds or a return amount so odds can be calculated.");
+    return;
+  }
   const existingBet=editingId?bets.find(item=>item.id===editingId):null;
   let cashoutAmount=document.getElementById("result").value==="cashout"?Number(existingBet?.cashoutAmount||0):0;
   if(document.getElementById("result").value==="cashout"&&!cashoutAmount){
@@ -830,7 +880,7 @@ document.getElementById("betForm").addEventListener("submit",event=>{
     event:document.getElementById("event").value.trim(),
     market:document.getElementById("market").value.trim(),
     betType:document.getElementById("betType").value,
-    odds:Number(document.getElementById("odds").value),
+    odds:submittedOdds,
     oddsFormat:document.getElementById("oddsFormat").value,
     stake:Number(document.getElementById("stake").value),
     result:document.getElementById("result").value,
@@ -845,6 +895,16 @@ document.getElementById("betForm").addEventListener("submit",event=>{
 });
 
 document.getElementById("clearForm").addEventListener("click",resetForm);
+document.getElementById("odds").addEventListener("input",syncReturnFromOdds);
+document.getElementById("returnAmount").addEventListener("input",syncOddsFromReturn);
+document.getElementById("stake").addEventListener("input",()=>{
+  if(document.activeElement&&document.activeElement.id==="returnAmount")syncOddsFromReturn();
+  else syncReturnFromOdds();
+});
+document.getElementById("oddsFormat").addEventListener("change",()=>{
+  if(document.getElementById("returnAmount").value)syncOddsFromReturn();
+  syncReturnFromOdds();
+});
 ["search","filterResult","filterFrom","filterTo"].forEach(id=>document.getElementById(id).addEventListener("input",renderBetsTable));
 
 document.getElementById("resetFilters").addEventListener("click",()=>{
