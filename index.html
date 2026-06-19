@@ -66,6 +66,9 @@ tr:hover td{background:rgba(0,217,255,.05)}
 .auth-panel input{min-width:220px}
 .auth-status{color:var(--muted);font-size:12px}
 .hidden{display:none!important}
+.ocr-tools{display:grid;grid-template-columns:auto auto 1fr;gap:10px;align-items:start}
+.ocr-preview{width:100%;min-height:96px;background:#05080c;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px;font-family:inherit;resize:vertical}
+.ocr-status{color:var(--muted);font-size:12px;line-height:1.4}
 .mobile-status-strip,.mobile-bet-cards,.mobile-calendar-list,.collapse-toggle{display:none}
 .open-bets-panel{display:none;border-color:rgba(0,217,255,.55)}
 .mobile-collapse-body{display:contents}
@@ -79,6 +82,7 @@ header{display:block;padding:10px 12px}.brand{font-size:16px}.tagline{margin-top
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:8px;background:#070b10;border-top:1px solid var(--line);border-bottom:0}
 nav button{min-height:52px;padding:7px 4px;font-size:11px;border-left:0}
 main{padding:12px}.auth-panel,.auth-panel form{display:block}.auth-panel{padding:10px 12px}.auth-panel input,.auth-panel button{margin-top:8px;min-width:0;width:100%}
+.ocr-tools{grid-template-columns:1fr}.ocr-tools button{width:100%}
 .grid,.month-summary,form,.filters{grid-template-columns:1fr}
 .open-bets-panel{display:block}
 .card{min-height:auto;padding:12px}.value{font-size:24px}
@@ -178,6 +182,17 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
 </section>
 
 <section id="bets" class="tab">
+  <div class="panel">
+    <div class="panel-title">Upload Bet Slip Screenshot</div>
+    <div class="ocr-tools">
+      <button class="small-button" id="pickScreenshotButton" type="button">UPLOAD SCREENSHOT</button>
+      <button class="small-button" id="fillFromOcrButton" type="button">FILL FORM FROM TEXT</button>
+      <div class="ocr-status" id="ocrStatus">Upload a clear screenshot of a bet slip. Review the filled form before saving.</div>
+    </div>
+    <input type="file" id="betSlipImage" accept="image/*" style="display:none;" />
+    <textarea class="ocr-preview" id="ocrText" placeholder="OCR text will appear here. You can edit it before filling the form."></textarea>
+  </div>
+
   <div class="panel">
     <div class="panel-title">Enter Bet</div>
     <form id="betForm">
@@ -317,6 +332,7 @@ table{font-size:12px}.desktop-table{display:none}.mobile-bet-cards{display:grid;
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -539,6 +555,92 @@ function syncOddsFromReturn(){
     return;
   }
   document.getElementById("odds").value=oddsFormat==="decimal"?Number(value).toFixed(2):Math.round(value);
+}
+
+function parseMoneyFromText(text,labels){
+  for(const label of labels){
+    const re=new RegExp(`${label}[^\\d$]*(?:CA\\$|\\$)?\\s*([0-9]+(?:[,.][0-9]{2})?)`,"i");
+    const match=text.match(re);
+    if(match)return Number(match[1].replace(",",""));
+  }
+  return 0;
+}
+
+function parseOddsFromText(text){
+  const american=text.match(/(^|[\s(])([+-]\d{3,4})(?=\s|$|[)])/m);
+  if(american)return{odds:Number(american[2]),format:"american"};
+  const decimalMatches=[...text.matchAll(/\b([1-9]\d?\.\d{2})\b/g)].map(m=>Number(m[1])).filter(n=>n>1&&n<100);
+  if(decimalMatches.length)return{odds:decimalMatches[0],format:"decimal"};
+  return{odds:0,format:"decimal"};
+}
+
+function detectBook(text){
+  const books=["bet365","draftkings","fanduel","betmgm","caesars","espn bet","fanatics","pinnacle","pointsbet","betrivers"];
+  const lower=text.toLowerCase();
+  return books.find(book=>lower.includes(book))||"";
+}
+
+function detectSport(text){
+  const sports=["NHL","NBA","MLB","NFL","WNBA","NCAAB","NCAAF","Soccer","Tennis","UFC","Golf"];
+  const upper=text.toUpperCase();
+  return sports.find(sport=>upper.includes(sport.toUpperCase()))||"";
+}
+
+function detectBetType(text){
+  const lower=text.toLowerCase();
+  if(lower.includes("parlay"))return"Parlay";
+  if(lower.includes("player prop")||/\b(points|rebounds|assists|shots|saves|strikeouts|bases|yards|goals)\b/i.test(text))return"Player Prop";
+  if(lower.includes("spread")||lower.includes("puck line")||lower.includes("run line"))return"Spread";
+  if(lower.includes("over")||lower.includes("under")||/\bo\/u\b/i.test(text))return"Total";
+  if(lower.includes("moneyline")||lower.includes("money line")||/\bml\b/i.test(text))return"Moneyline";
+  return"Other";
+}
+
+function findEventLine(lines){
+  return lines.find(line=>/\b(vs\.?|v|@)\b/i.test(line)&&!/(odds|stake|wager|return|payout)/i.test(line))||"Uploaded Bet Slip";
+}
+
+function findMarketLine(lines){
+  return lines.find(line=>/(over|under|moneyline|money line|spread|puck line|run line|points|rebounds|assists|shots|strikeouts|yards|goals)/i.test(line))||"Imported Pick";
+}
+
+function parseBetSlipText(text){
+  const clean=text.replace(/\r/g,"\n").replace(/\n{2,}/g,"\n").trim();
+  const lines=clean.split("\n").map(line=>line.trim()).filter(Boolean);
+  const oddsInfo=parseOddsFromText(clean);
+  const stake=parseMoneyFromText(clean,["stake","wager","risk","bet amount","amount"]);
+  const returnAmount=parseMoneyFromText(clean,["return","returns","payout","to return","potential return","potential payout","total payout"]);
+  return{
+    date:new Date().toISOString().slice(0,10),
+    sport:detectSport(clean),
+    event:findEventLine(lines),
+    market:findMarketLine(lines),
+    betType:detectBetType(clean),
+    odds:oddsInfo.odds,
+    oddsFormat:oddsInfo.format,
+    stake,
+    returnAmount,
+    book:detectBook(clean),
+    notes:`Imported from screenshot OCR:\n${clean.slice(0,1200)}`
+  };
+}
+
+function fillBetFormFromParsedSlip(parsed){
+  document.getElementById("date").value=parsed.date;
+  document.getElementById("sport").value=parsed.sport||"";
+  document.getElementById("event").value=parsed.event;
+  document.getElementById("market").value=parsed.market;
+  document.getElementById("betType").value=parsed.betType;
+  document.getElementById("oddsFormat").value=parsed.oddsFormat||"decimal";
+  document.getElementById("stake").value=parsed.stake||"";
+  document.getElementById("returnAmount").value=parsed.returnAmount?parsed.returnAmount.toFixed(2):"";
+  document.getElementById("odds").value=parsed.odds?((parsed.oddsFormat==="decimal")?Number(parsed.odds).toFixed(2):Math.round(parsed.odds)):"";
+  if(!parsed.odds&&parsed.returnAmount)syncOddsFromReturn();
+  if(!parsed.returnAmount&&parsed.odds)syncReturnFromOdds();
+  document.getElementById("result").value="pending";
+  document.getElementById("book").value=parsed.book||"";
+  document.getElementById("notes").value=parsed.notes;
+  document.querySelector("#betForm .primary").textContent=editingId?"UPDATE BET":"ADD BET";
 }
 
 function getSettledBets(list=bets){return list.filter(bet=>bet.result!=="pending")}
@@ -909,6 +1011,41 @@ document.getElementById("betForm").addEventListener("submit",event=>{
 });
 
 document.getElementById("clearForm").addEventListener("click",resetForm);
+document.getElementById("pickScreenshotButton").addEventListener("click",()=>document.getElementById("betSlipImage").click());
+document.getElementById("betSlipImage").addEventListener("change",async event=>{
+  const file=event.target.files[0];
+  if(!file)return;
+  const status=document.getElementById("ocrStatus");
+  if(typeof Tesseract==="undefined"){
+    status.textContent="OCR library did not load. Check your internet connection and reload.";
+    return;
+  }
+  status.textContent="Reading screenshot...";
+  try{
+    const result=await Tesseract.recognize(file,"eng",{
+      logger:progress=>{
+        if(progress.status)status.textContent=`${progress.status} ${progress.progress?Math.round(progress.progress*100)+"%":""}`;
+      }
+    });
+    const text=result.data.text.trim();
+    document.getElementById("ocrText").value=text;
+    fillBetFormFromParsedSlip(parseBetSlipText(text));
+    status.textContent="Screenshot read. Review the filled bet form before saving.";
+  }catch(error){
+    status.textContent="Could not read that screenshot. Try a clearer crop of the bet slip.";
+  }finally{
+    event.target.value="";
+  }
+});
+document.getElementById("fillFromOcrButton").addEventListener("click",()=>{
+  const text=document.getElementById("ocrText").value.trim();
+  if(!text){
+    alert("Paste or upload bet slip text first.");
+    return;
+  }
+  fillBetFormFromParsedSlip(parseBetSlipText(text));
+  document.getElementById("ocrStatus").textContent="Filled the form from the OCR text. Review before saving.";
+});
 document.getElementById("odds").addEventListener("input",syncReturnFromOdds);
 document.getElementById("returnAmount").addEventListener("input",syncOddsFromReturn);
 document.getElementById("stake").addEventListener("input",()=>{
