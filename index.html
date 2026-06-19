@@ -559,7 +559,16 @@ function syncOddsFromReturn(){
 
 function parseMoneyFromText(text,labels){
   for(const label of labels){
-    const re=new RegExp(`${label}[^\\d$]*(?:CA\\$|\\$)?\\s*([0-9]+(?:[,.][0-9]{2})?)`,"i");
+    const labelPattern=label.replace(/\s+/g,"\\s+");
+    const labelMatch=text.match(new RegExp(labelPattern,"i"));
+    if(labelMatch){
+      const segment=text.slice(labelMatch.index+labelMatch[0].length,labelMatch.index+labelMatch[0].length+160).split(/cash\s*out|reuse|share|track/i)[0];
+      const amounts=[...segment.matchAll(/(?:CA\$|\$)\s*([0-9]+(?:[,.][0-9]{2})?)/gi)].map(match=>Number(match[1].replace(",","")));
+      if(amounts.length){
+        return /(return|payout|returns)/i.test(label)?amounts[amounts.length-1]:amounts[0];
+      }
+    }
+    const re=new RegExp(`${labelPattern}[^\\d$]*(?:CA\\$|\\$)?\\s*([0-9]+(?:[,.][0-9]{2})?)`,"i");
     const match=text.match(re);
     if(match)return Number(match[1].replace(",",""));
   }
@@ -569,7 +578,13 @@ function parseMoneyFromText(text,labels){
 function parseOddsFromText(text){
   const american=text.match(/(^|[\s(])([+-]\d{3,4})(?=\s|$|[)])/m);
   if(american)return{odds:Number(american[2]),format:"american"};
-  const decimalMatches=[...text.matchAll(/\b([1-9]\d?\.\d{2})\b/g)].map(m=>Number(m[1])).filter(n=>n>1&&n<100);
+  const decimalMatches=[...text.matchAll(/\b([1-9]\d?\.\d{2})\b/g)].filter(match=>{
+    const value=Number(match[1]);
+    const index=match.index||0;
+    const before=text.slice(Math.max(0,index-6),index);
+    const after=text.slice(index,index+28);
+    return value>1&&value<=20&&!/\$|CA\$/i.test(before)&&!/(wager|stake|risk|return|payout|cash\s*out|boost|incl)/i.test(after);
+  }).map(match=>Number(match[1]));
   if(decimalMatches.length)return{odds:decimalMatches[0],format:"decimal"};
   return{odds:0,format:"decimal"};
 }
@@ -604,12 +619,71 @@ function findMarketLine(lines){
   return lines.find(line=>/(over|under|moneyline|money line|spread|puck line|run line|points|rebounds|assists|shots|strikeouts|yards|goals)/i.test(line))||"Imported Pick";
 }
 
+function looksLikeScheduleLine(line){
+  return /\b(mon|tue|wed|thu|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{1,2}:\d{2}\s?(am|pm))\b/i.test(line);
+}
+
+function isSlipNoiseLine(line){
+  return /(track|reuse selections|share|wager|total|return|cash\s*out|boost|applied|incl|odds|stake|risk)/i.test(line);
+}
+
+function parseParlayLegs(lines){
+  const legs=[];
+  lines.forEach((line,index)=>{
+    const legMatch=line.match(/^(.{1,40}?)\s+([1-9]\d?\.\d{2}|[+-]\d{3,4})$/);
+    if(!legMatch)return;
+    const pick=legMatch[1].replace(/^[^\wÀ-ÿ]+/,"").trim();
+    if(!pick||isSlipNoiseLine(pick))return;
+    const odds=legMatch[2];
+    const market=(lines[index+1]&&!isSlipNoiseLine(lines[index+1]))?lines[index+1]:"Imported Leg";
+    const teams=[];
+    for(let i=index+2;i<Math.min(lines.length,index+8);i++){
+      const candidate=lines[i].replace(/^[^\wÀ-ÿ]+/,"").trim();
+      if(!candidate||isSlipNoiseLine(candidate))break;
+      if(looksLikeScheduleLine(candidate))continue;
+      if(/^[A-Za-zÀ-ÿ0-9 .'-]{2,32}$/.test(candidate))teams.push(candidate);
+      if(teams.length>=2)break;
+    }
+    legs.push({pick,odds,market,teams});
+  });
+  return legs;
+}
+
+function parseParlaySlip(clean,lines,stake,returnAmount){
+  const legs=parseParlayLegs(lines);
+  const parlayMatch=clean.match(/(\d+)\s*(?:leg|legs?)\s*parlay/i);
+  const legCount=parlayMatch?Number(parlayMatch[1]):legs.length;
+  if(!/parlay/i.test(clean)&&legs.length<2)return null;
+  const event=legs.length
+    ? legs.map(leg=>leg.teams.length>=2?leg.teams.slice(0,2).join(" vs "):leg.market).join(" + ")
+    : `${legCount||""} Leg Parlay`.trim();
+  const market=legs.length
+    ? legs.map((leg,i)=>`Leg ${i+1}: ${leg.pick} ${leg.market}${leg.teams.length?` (${leg.teams.slice(0,2).join(" vs ")})`:""}`).join("; ")
+    : `${legCount||""} Leg Parlay`.trim();
+  const odds=stake>0&&returnAmount>0?returnAmount/stake:parseOddsFromText(clean).odds;
+  return{
+    date:new Date().toISOString().slice(0,10),
+    sport:detectSport(clean),
+    event:event||"Uploaded Parlay",
+    market:market||"Imported Parlay",
+    betType:"Parlay",
+    odds,
+    oddsFormat:"decimal",
+    stake,
+    returnAmount,
+    book:detectBook(clean),
+    notes:`Imported from screenshot OCR:\n${clean.slice(0,1200)}`
+  };
+}
+
 function parseBetSlipText(text){
-  const clean=text.replace(/\r/g,"\n").replace(/\n{2,}/g,"\n").trim();
+  const clean=text.replace(/\r/g,"\n").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/\n{2,}/g,"\n").trim();
   const lines=clean.split("\n").map(line=>line.trim()).filter(Boolean);
+  const stake=parseMoneyFromText(clean,["wager","stake","risk","bet amount"]);
+  const returnAmount=parseMoneyFromText(clean,["total to return","to return","potential return","potential payout","total payout","payout","returns","return"]);
+  const parlay=parseParlaySlip(clean,lines,stake,returnAmount);
+  if(parlay)return parlay;
   const oddsInfo=parseOddsFromText(clean);
-  const stake=parseMoneyFromText(clean,["stake","wager","risk","bet amount","amount"]);
-  const returnAmount=parseMoneyFromText(clean,["return","returns","payout","to return","potential return","potential payout","total payout"]);
   return{
     date:new Date().toISOString().slice(0,10),
     sport:detectSport(clean),
